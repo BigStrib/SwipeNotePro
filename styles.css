@@ -393,9 +393,17 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover { color: var(--text-primary); }
-.icon-btn:active { color: var(--text-primary); }
+.icon-btn:focus { outline: none; }
+.icon-btn:active { color: var(--text-primary); outline: none; }
 .delete-btn:hover { color: var(--red); }
 .delete-btn:active { color: var(--red); }
 

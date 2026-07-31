@@ -24,7 +24,6 @@
     let currentNoteIndex = 0;
     let deleteTargetId = null;
 
-    // Touch/drag
     let isDragging = false;
     let dragStartY = 0;
     let dragOffset = 0;
@@ -32,17 +31,13 @@
     let dragStartedInTextarea = false;
     let textareaAtBoundary = false;
     let touchStartedInViewport = false;
-
-    // Scroll
     let scrollCooldown = false;
-
-    // Resize
-    let resizeTimer = null;
+    let rafId = null;
 
     // ========== STORAGE ==========
     function save() {
-        const data = { notes: [], currentNoteIndex, defaultFontSize: 16 };
-        notes.forEach(n => {
+        var data = { notes: [], currentNoteIndex: currentNoteIndex };
+        notes.forEach(function (n) {
             data.notes.push({
                 id: n.id,
                 content: n.content,
@@ -56,15 +51,17 @@
 
     function load() {
         try {
-            const d = JSON.parse(localStorage.getItem('notesAppData'));
+            var d = JSON.parse(localStorage.getItem('notesAppData'));
             if (d) {
-                notes = (d.notes || []).map(n => ({
-                    id: n.id,
-                    content: n.content || '',
-                    fontSize: n.fontSize || 16,
-                    createdAt: n.createdAt || Date.now(),
-                    updatedAt: n.updatedAt || Date.now()
-                }));
+                notes = (d.notes || []).map(function (n) {
+                    return {
+                        id: n.id,
+                        content: n.content || '',
+                        fontSize: n.fontSize || 16,
+                        createdAt: n.createdAt || Date.now(),
+                        updatedAt: n.updatedAt || Date.now()
+                    };
+                });
                 currentNoteIndex = d.currentNoteIndex || 0;
                 if (currentNoteIndex >= notes.length) {
                     currentNoteIndex = Math.max(0, notes.length - 1);
@@ -82,35 +79,35 @@
     }
 
     function escHtml(t) {
-        const d = document.createElement('div');
+        var d = document.createElement('div');
         d.textContent = t;
         return d.innerHTML;
     }
 
     function getTitle(n) {
         if (!n.content || !n.content.trim()) return 'Untitled Note';
-        const l = n.content.trim().split('\n')[0];
+        var l = n.content.trim().split('\n')[0];
         return l.length > 40 ? l.substring(0, 40) + '…' : l;
     }
 
     function getPreview(n) {
         if (!n.content || !n.content.trim()) return '';
-        const lines = n.content.trim().split('\n');
+        var lines = n.content.trim().split('\n');
         if (lines.length > 1) {
-            const p = lines.slice(1).join(' ').trim();
+            var p = lines.slice(1).join(' ').trim();
             return p.length > 50 ? p.substring(0, 50) + '…' : p;
         }
         return '';
     }
 
     function fmtDate(ts) {
-        const diff = Date.now() - ts;
-        const m = Math.floor(diff / 60000);
+        var diff = Date.now() - ts;
+        var m = Math.floor(diff / 60000);
         if (m < 1) return 'Now';
         if (m < 60) return m + 'm';
-        const h = Math.floor(diff / 3600000);
+        var h = Math.floor(diff / 3600000);
         if (h < 24) return h + 'h';
-        const dy = Math.floor(diff / 86400000);
+        var dy = Math.floor(diff / 86400000);
         if (dy < 7) return dy + 'd';
         return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
@@ -177,14 +174,14 @@
     }
 
     function focusCurrent() {
-        setTimeout(() => {
-            const ta = getActiveTextarea();
+        setTimeout(function () {
+            var ta = getActiveTextarea();
             if (ta) ta.focus();
         }, 420);
     }
 
     function deleteNote(id) {
-        const i = notes.findIndex(n => n.id === id);
+        var i = notes.findIndex(function (n) { return n.id === id; });
         if (i === -1) return;
         notes.splice(i, 1);
         if (!notes.length) currentNoteIndex = 0;
@@ -195,7 +192,7 @@
     }
 
     function updateNote(id, content) {
-        const n = notes.find(n => n.id === id);
+        var n = notes.find(function (n) { return n.id === id; });
         if (n) {
             n.content = content;
             n.updatedAt = Date.now();
@@ -235,14 +232,16 @@
     }
 
     function setPositionImmediate() {
+        if (!notes.length) return;
         notesContainer.classList.remove('animating');
         notesContainer.style.transform = 'translateY(' + getTargetOffset() + 'px)';
     }
 
     function animateToPosition() {
+        if (!notes.length) return;
         notesContainer.classList.add('animating');
         notesContainer.style.transform = 'translateY(' + getTargetOffset() + 'px)';
-        const onEnd = () => {
+        var onEnd = function () {
             notesContainer.classList.remove('animating');
             notesContainer.removeEventListener('transitionend', onEnd);
         };
@@ -261,18 +260,17 @@
 
     function renderNotes() {
         notesContainer.innerHTML = '';
-        notes.forEach(note => {
-            const card = document.createElement('div');
+        notes.forEach(function (note) {
+            var card = document.createElement('div');
             card.className = 'note-card';
             card.dataset.id = note.id;
 
-            const ta = document.createElement('textarea');
+            var ta = document.createElement('textarea');
             ta.className = 'note-textarea';
             ta.placeholder = 'Start writing...';
             ta.value = note.content;
             ta.style.fontSize = note.fontSize + 'px';
-
-            ta.addEventListener('input', () => updateNote(note.id, ta.value));
+            ta.addEventListener('input', function () { updateNote(note.id, ta.value); });
 
             card.appendChild(ta);
             notesContainer.appendChild(card);
@@ -281,36 +279,38 @@
 
     function renderSidebar(filter) {
         sidebarNotesList.innerHTML = '';
-        const q = (filter || searchInput.value).toLowerCase().trim();
-        const filtered = q
-            ? notes.filter(n => n.content.toLowerCase().includes(q) || getTitle(n).toLowerCase().includes(q))
+        var q = (filter || searchInput.value).toLowerCase().trim();
+        var filtered = q
+            ? notes.filter(function (n) {
+                return n.content.toLowerCase().includes(q) || getTitle(n).toLowerCase().includes(q);
+            })
             : notes;
 
-        filtered.forEach(note => {
-            const idx = notes.indexOf(note);
-            const item = document.createElement('div');
+        filtered.forEach(function (note) {
+            var idx = notes.indexOf(note);
+            var item = document.createElement('div');
             item.className = 'sidebar-note-item';
 
-            const del = document.createElement('div');
+            var del = document.createElement('div');
             del.className = 'sidebar-note-delete';
             del.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            del.addEventListener('click', e => {
+            del.addEventListener('click', function (e) {
                 e.stopPropagation();
                 showDeleteModal(note.id);
             });
 
-            const content = document.createElement('div');
+            var content = document.createElement('div');
             content.className = 'sidebar-note-content' + (idx === currentNoteIndex ? ' active' : '');
-            const preview = getPreview(note);
+            var preview = getPreview(note);
             content.innerHTML =
                 '<div class="sidebar-note-icon"><i class="fas fa-file-alt"></i></div>' +
                 '<div class="sidebar-note-info">' +
-                    '<div class="sidebar-note-title">' + escHtml(getTitle(note)) + '</div>' +
-                    (preview ? '<div class="sidebar-note-preview">' + escHtml(preview) + '</div>' : '') +
+                '<div class="sidebar-note-title">' + escHtml(getTitle(note)) + '</div>' +
+                (preview ? '<div class="sidebar-note-preview">' + escHtml(preview) + '</div>' : '') +
                 '</div>' +
                 '<div class="sidebar-note-date">' + fmtDate(note.updatedAt) + '</div>';
 
-            content.addEventListener('click', () => {
+            content.addEventListener('click', function () {
                 if (content.classList.contains('swiped')) {
                     content.classList.remove('swiped');
                     return;
@@ -331,24 +331,26 @@
     function renderDots() {
         dotNavigation.innerHTML = '';
         if (!notes.length) return;
-        const max = 25;
-        let start = 0, end = notes.length;
+        var max = 25;
+        var start = 0, end = notes.length;
         if (notes.length > max) {
             start = Math.max(0, currentNoteIndex - Math.floor(max / 2));
             end = Math.min(notes.length, start + max);
             if (end - start < max) start = Math.max(0, end - max);
         }
-        for (let i = start; i < end; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'dot' + (i === currentNoteIndex ? ' active' : '');
-            dot.addEventListener('click', () => goToNote(i));
-            dotNavigation.appendChild(dot);
+        for (var i = start; i < end; i++) {
+            (function (idx) {
+                var dot = document.createElement('div');
+                dot.className = 'dot' + (idx === currentNoteIndex ? ' active' : '');
+                dot.addEventListener('click', function () { goToNote(idx); });
+                dotNavigation.appendChild(dot);
+            })(i);
         }
     }
 
     function renderCounter() {
-        const c = notes.length;
-        const l = c + (c === 1 ? ' Note' : ' Notes');
+        var c = notes.length;
+        var l = c + (c === 1 ? ' Note' : ' Notes');
         noteCounter.textContent = l;
         sidebarNoteCount.textContent = l;
     }
@@ -376,13 +378,15 @@
     function closeSidebar() {
         sidebar.classList.remove('open');
         sidebarOverlay.classList.remove('active');
-        document.querySelectorAll('.sidebar-note-content.swiped').forEach(el => el.classList.remove('swiped'));
+        document.querySelectorAll('.sidebar-note-content.swiped').forEach(function (el) {
+            el.classList.remove('swiped');
+        });
     }
 
-    // ========== DELETE MODAL ==========
+    // ========== DELETE ==========
     function showDeleteModal(id) {
         deleteTargetId = id;
-        const n = notes.find(n => n.id === id);
+        var n = notes.find(function (n) { return n.id === id; });
         if (n) deleteModalText.textContent = '"' + getTitle(n) + '" will be permanently deleted.';
         deleteModal.classList.add('active');
     }
@@ -392,20 +396,22 @@
         deleteTargetId = null;
     }
 
-    // ========== FONT SIZE (per note) ==========
+    // ========== FONT SIZE ==========
     function changeFontSize(delta) {
         if (!notes.length) return;
-        const note = notes[currentNoteIndex];
+        var note = notes[currentNoteIndex];
         if (!note) return;
-        note.fontSize = Math.min(36, Math.max(10, note.fontSize + delta));
+        var newSize = Math.min(36, Math.max(10, note.fontSize + delta));
+        if (newSize === note.fontSize) return;
+        note.fontSize = newSize;
         save();
-        const ta = getActiveTextarea();
+        var ta = getActiveTextarea();
         if (ta) ta.style.fontSize = note.fontSize + 'px';
     }
 
     // ========== TEXTAREA ==========
     function getActiveTextarea() {
-        const cards = notesContainer.querySelectorAll('.note-card');
+        var cards = notesContainer.querySelectorAll('.note-card');
         if (!cards[currentNoteIndex]) return null;
         return cards[currentNoteIndex].querySelector('.note-textarea');
     }
@@ -529,7 +535,7 @@
         }, { passive: true });
     }
 
-    // ========== EMPTY INTERACTIONS ==========
+    // ========== EMPTY ==========
     function setupEmptyInteractions() {
         var emptyTouchStart = 0;
 
@@ -584,11 +590,26 @@
     }
 
     // ========== RESIZE ==========
-    function handleResize() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function () {
-            setPositionImmediate();
-        }, 100);
+    function setupResize() {
+        var onResize = function () {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(function () {
+                setPositionImmediate();
+                rafId = null;
+            });
+        };
+
+        window.addEventListener('resize', onResize);
+        window.addEventListener('orientationchange', function () {
+            setTimeout(setPositionImmediate, 50);
+            setTimeout(setPositionImmediate, 200);
+            setTimeout(setPositionImmediate, 500);
+        });
+
+        // Catch visual viewport resize on mobile (keyboard open/close)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onResize);
+        }
     }
 
     // ========== EVENTS ==========
@@ -614,11 +635,7 @@
             if (e.target === deleteModal) hideDeleteModal();
         });
 
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', function () {
-            setTimeout(setPositionImmediate, 200);
-        });
-
+        setupResize();
         setupTouch();
         setupScroll();
         setupEmptyInteractions();
