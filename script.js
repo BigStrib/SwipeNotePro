@@ -22,42 +22,63 @@
 
     let notes = [];
     let currentNoteIndex = 0;
-    let fontSize = 16;
     let deleteTargetId = null;
 
+    // Touch/drag
     let isDragging = false;
     let dragStartY = 0;
     let dragOffset = 0;
     let dragStartTime = 0;
     let dragStartedInTextarea = false;
     let textareaAtBoundary = false;
-    let scrollCooldown = false;
     let touchStartedInViewport = false;
+
+    // Scroll
+    let scrollCooldown = false;
+
+    // Resize
+    let resizeTimer = null;
 
     // ========== STORAGE ==========
     function save() {
-        localStorage.setItem('notesAppData', JSON.stringify({ notes, currentNoteIndex, fontSize }));
+        const data = { notes: [], currentNoteIndex, defaultFontSize: 16 };
+        notes.forEach(n => {
+            data.notes.push({
+                id: n.id,
+                content: n.content,
+                fontSize: n.fontSize,
+                createdAt: n.createdAt,
+                updatedAt: n.updatedAt
+            });
+        });
+        localStorage.setItem('notesAppData', JSON.stringify(data));
     }
 
     function load() {
         try {
             const d = JSON.parse(localStorage.getItem('notesAppData'));
             if (d) {
-                notes = d.notes || [];
+                notes = (d.notes || []).map(n => ({
+                    id: n.id,
+                    content: n.content || '',
+                    fontSize: n.fontSize || 16,
+                    createdAt: n.createdAt || Date.now(),
+                    updatedAt: n.updatedAt || Date.now()
+                }));
                 currentNoteIndex = d.currentNoteIndex || 0;
-                fontSize = d.fontSize || 16;
-                if (currentNoteIndex >= notes.length) currentNoteIndex = Math.max(0, notes.length - 1);
+                if (currentNoteIndex >= notes.length) {
+                    currentNoteIndex = Math.max(0, notes.length - 1);
+                }
             }
         } catch (e) {
             notes = [];
             currentNoteIndex = 0;
-            fontSize = 16;
         }
     }
 
     // ========== HELPERS ==========
     function genId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
     }
 
     function escHtml(t) {
@@ -73,11 +94,11 @@
     }
 
     function getPreview(n) {
-        if (!n.content || !n.content.trim()) return 'Empty note';
+        if (!n.content || !n.content.trim()) return '';
         const lines = n.content.trim().split('\n');
         if (lines.length > 1) {
             const p = lines.slice(1).join(' ').trim();
-            return p.length > 50 ? p.substring(0, 50) + '…' : p || '';
+            return p.length > 50 ? p.substring(0, 50) + '…' : p;
         }
         return '';
     }
@@ -89,31 +110,21 @@
         if (m < 60) return m + 'm';
         const h = Math.floor(diff / 3600000);
         if (h < 24) return h + 'h';
-        const d = Math.floor(diff / 86400000);
-        if (d < 7) return d + 'd';
+        const dy = Math.floor(diff / 86400000);
+        if (dy < 7) return dy + 'd';
         return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
     function isNoteEmpty(note) {
-        return !note.content || note.content.trim() === '';
-    }
-
-    function hasBlankNeighbor(direction) {
-        if (notes.length === 0) return false;
-        if (isNoteEmpty(notes[currentNoteIndex])) return true;
-        if (direction === 'down') {
-            if (currentNoteIndex < notes.length - 1 && isNoteEmpty(notes[currentNoteIndex + 1])) return true;
-        }
-        if (direction === 'up') {
-            if (currentNoteIndex > 0 && isNoteEmpty(notes[currentNoteIndex - 1])) return true;
-        }
-        return false;
+        return !note || !note.content || note.content.trim() === '';
     }
 
     function canCreateNote(direction) {
         if (notes.length === 0) return true;
         if (isNoteEmpty(notes[currentNoteIndex])) return false;
-        return !hasBlankNeighbor(direction);
+        if (direction === 'down' && currentNoteIndex < notes.length - 1 && isNoteEmpty(notes[currentNoteIndex + 1])) return false;
+        if (direction === 'up' && currentNoteIndex > 0 && isNoteEmpty(notes[currentNoteIndex - 1])) return false;
+        return true;
     }
 
     function canGoNext() {
@@ -129,49 +140,47 @@
     }
 
     // ========== NOTE OPS ==========
+    function makeNote() {
+        return {
+            id: genId(),
+            content: '',
+            fontSize: 16,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+    }
+
     function createNoteBelow() {
-        if (!canCreateNote('down')) return false;
-        notes.splice(currentNoteIndex + 1, 0, {
-            id: genId(), content: '', createdAt: Date.now(), updatedAt: Date.now()
-        });
-        currentNoteIndex = currentNoteIndex + 1;
+        if (!canCreateNote('down')) return;
+        notes.splice(currentNoteIndex + 1, 0, makeNote());
+        currentNoteIndex++;
         save();
         renderAll();
-        setTimeout(() => {
-            const cards = notesContainer.querySelectorAll('.note-card');
-            const ta = cards[currentNoteIndex]?.querySelector('.note-textarea');
-            if (ta) ta.focus();
-        }, 450);
-        return true;
+        focusCurrent();
     }
 
     function createNoteAbove() {
-        if (!canCreateNote('up')) return false;
-        notes.splice(currentNoteIndex, 0, {
-            id: genId(), content: '', createdAt: Date.now(), updatedAt: Date.now()
-        });
+        if (!canCreateNote('up')) return;
+        notes.splice(currentNoteIndex, 0, makeNote());
         save();
         renderAll();
-        setTimeout(() => {
-            const cards = notesContainer.querySelectorAll('.note-card');
-            const ta = cards[currentNoteIndex]?.querySelector('.note-textarea');
-            if (ta) ta.focus();
-        }, 450);
-        return true;
+        focusCurrent();
     }
 
     function createFirstNote() {
         if (notes.length > 0) return;
-        notes.push({
-            id: genId(), content: '', createdAt: Date.now(), updatedAt: Date.now()
-        });
+        notes.push(makeNote());
         currentNoteIndex = 0;
         save();
         renderAll();
+        focusCurrent();
+    }
+
+    function focusCurrent() {
         setTimeout(() => {
-            const ta = notesContainer.querySelector('.note-textarea');
+            const ta = getActiveTextarea();
             if (ta) ta.focus();
-        }, 450);
+        }, 420);
     }
 
     function deleteNote(id) {
@@ -204,7 +213,7 @@
         save();
         renderDots();
         renderSidebar();
-        setPosition(true);
+        animateToPosition();
     }
 
     function goNext() {
@@ -219,6 +228,27 @@
         else createNoteAbove();
     }
 
+    // ========== POSITION ==========
+    function getTargetOffset() {
+        if (!notes.length) return 0;
+        return -currentNoteIndex * notesViewport.offsetHeight;
+    }
+
+    function setPositionImmediate() {
+        notesContainer.classList.remove('animating');
+        notesContainer.style.transform = 'translateY(' + getTargetOffset() + 'px)';
+    }
+
+    function animateToPosition() {
+        notesContainer.classList.add('animating');
+        notesContainer.style.transform = 'translateY(' + getTargetOffset() + 'px)';
+        const onEnd = () => {
+            notesContainer.classList.remove('animating');
+            notesContainer.removeEventListener('transitionend', onEnd);
+        };
+        notesContainer.addEventListener('transitionend', onEnd);
+    }
+
     // ========== RENDER ==========
     function renderAll() {
         renderNotes();
@@ -226,7 +256,7 @@
         renderDots();
         renderCounter();
         renderEmpty();
-        setPosition(false);
+        setPositionImmediate();
     }
 
     function renderNotes() {
@@ -235,12 +265,15 @@
             const card = document.createElement('div');
             card.className = 'note-card';
             card.dataset.id = note.id;
+
             const ta = document.createElement('textarea');
             ta.className = 'note-textarea';
             ta.placeholder = 'Start writing...';
             ta.value = note.content;
-            ta.style.fontSize = fontSize + 'px';
+            ta.style.fontSize = note.fontSize + 'px';
+
             ta.addEventListener('input', () => updateNote(note.id, ta.value));
+
             card.appendChild(ta);
             notesContainer.appendChild(card);
         });
@@ -269,17 +302,19 @@
             const content = document.createElement('div');
             content.className = 'sidebar-note-content' + (idx === currentNoteIndex ? ' active' : '');
             const preview = getPreview(note);
-            content.innerHTML = `
-                <div class="sidebar-note-icon"><i class="fas fa-file-alt"></i></div>
-                <div class="sidebar-note-info">
-                    <div class="sidebar-note-title">${escHtml(getTitle(note))}</div>
-                    ${preview ? `<div class="sidebar-note-preview">${escHtml(preview)}</div>` : ''}
-                </div>
-                <div class="sidebar-note-date">${fmtDate(note.updatedAt)}</div>
-            `;
+            content.innerHTML =
+                '<div class="sidebar-note-icon"><i class="fas fa-file-alt"></i></div>' +
+                '<div class="sidebar-note-info">' +
+                    '<div class="sidebar-note-title">' + escHtml(getTitle(note)) + '</div>' +
+                    (preview ? '<div class="sidebar-note-preview">' + escHtml(preview) + '</div>' : '') +
+                '</div>' +
+                '<div class="sidebar-note-date">' + fmtDate(note.updatedAt) + '</div>';
 
             content.addEventListener('click', () => {
-                if (content.classList.contains('swiped')) { content.classList.remove('swiped'); return; }
+                if (content.classList.contains('swiped')) {
+                    content.classList.remove('swiped');
+                    return;
+                }
                 currentNoteIndex = idx;
                 save();
                 renderAll();
@@ -306,22 +341,16 @@
         for (let i = start; i < end; i++) {
             const dot = document.createElement('div');
             dot.className = 'dot' + (i === currentNoteIndex ? ' active' : '');
-            dot.addEventListener('click', () => {
-                currentNoteIndex = i;
-                save();
-                renderDots();
-                renderSidebar();
-                setPosition(true);
-            });
+            dot.addEventListener('click', () => goToNote(i));
             dotNavigation.appendChild(dot);
         }
     }
 
     function renderCounter() {
-        const count = notes.length;
-        const label = count + (count === 1 ? ' Note' : ' Notes');
-        noteCounter.textContent = label;
-        sidebarNoteCount.textContent = label;
+        const c = notes.length;
+        const l = c + (c === 1 ? ' Note' : ' Notes');
+        noteCounter.textContent = l;
+        sidebarNoteCount.textContent = l;
     }
 
     function renderEmpty() {
@@ -333,19 +362,6 @@
             emptyState.classList.remove('visible');
             notesViewport.style.display = '';
             dotNavigation.style.display = '';
-        }
-    }
-
-    function setPosition(animate) {
-        if (!notes.length) return;
-        const h = notesViewport.offsetHeight;
-        const offset = -currentNoteIndex * h;
-        if (!animate) notesContainer.classList.add('no-transition');
-        else notesContainer.classList.remove('no-transition');
-        notesContainer.style.transform = `translateY(${offset}px)`;
-        if (!animate) {
-            notesContainer.offsetHeight;
-            notesContainer.classList.remove('no-transition');
         }
     }
 
@@ -367,7 +383,7 @@
     function showDeleteModal(id) {
         deleteTargetId = id;
         const n = notes.find(n => n.id === id);
-        if (n) deleteModalText.textContent = `"${getTitle(n)}" will be permanently deleted.`;
+        if (n) deleteModalText.textContent = '"' + getTitle(n) + '" will be permanently deleted.';
         deleteModal.classList.add('active');
     }
 
@@ -376,17 +392,22 @@
         deleteTargetId = null;
     }
 
-    // ========== FONT SIZE ==========
+    // ========== FONT SIZE (per note) ==========
     function changeFontSize(delta) {
-        fontSize = Math.min(36, Math.max(10, fontSize + delta));
-        document.querySelectorAll('.note-textarea').forEach(ta => (ta.style.fontSize = fontSize + 'px'));
+        if (!notes.length) return;
+        const note = notes[currentNoteIndex];
+        if (!note) return;
+        note.fontSize = Math.min(36, Math.max(10, note.fontSize + delta));
         save();
+        const ta = getActiveTextarea();
+        if (ta) ta.style.fontSize = note.fontSize + 'px';
     }
 
-    // ========== TEXTAREA BOUNDARY ==========
+    // ========== TEXTAREA ==========
     function getActiveTextarea() {
         const cards = notesContainer.querySelectorAll('.note-card');
-        return cards[currentNoteIndex]?.querySelector('.note-textarea') || null;
+        if (!cards[currentNoteIndex]) return null;
+        return cards[currentNoteIndex].querySelector('.note-textarea');
     }
 
     function isAtBottom(ta) {
@@ -397,17 +418,9 @@
         return ta.scrollTop <= 2;
     }
 
-    function isInsideViewport(el) {
-        while (el) {
-            if (el === notesViewport) return true;
-            el = el.parentElement;
-        }
-        return false;
-    }
-
-    // ========== TOUCH DRAG ==========
+    // ========== TOUCH ==========
     function setupTouch() {
-        notesViewport.addEventListener('touchstart', e => {
+        notesViewport.addEventListener('touchstart', function (e) {
             if (!notes.length) return;
             touchStartedInViewport = true;
             dragStartY = e.touches[0].clientY;
@@ -418,17 +431,17 @@
             textareaAtBoundary = false;
         }, { passive: true });
 
-        document.addEventListener('touchmove', e => {
+        document.addEventListener('touchmove', function (e) {
             if (!touchStartedInViewport || dragStartY === 0) return;
 
-            const cy = e.touches[0].clientY;
-            const diff = dragStartY - cy;
+            var cy = e.touches[0].clientY;
+            var diff = dragStartY - cy;
 
             if (dragStartedInTextarea && !textareaAtBoundary) {
-                const ta = getActiveTextarea();
+                var ta = getActiveTextarea();
                 if (ta) {
-                    const atBound = diff > 0 ? isAtBottom(ta) : isAtTop(ta);
-                    if (!atBound) return;
+                    var bound = diff > 0 ? isAtBottom(ta) : isAtTop(ta);
+                    if (!bound) return;
                     if (Math.abs(diff) > 20) {
                         textareaAtBoundary = true;
                         dragStartY = cy;
@@ -437,59 +450,55 @@
                 }
             }
 
-            if (Math.abs(diff) > 8) {
-                const allowed = diff > 0 ? canGoNext() : canGoPrev();
+            if (Math.abs(diff) > 10) {
+                var allowed = diff > 0 ? canGoNext() : canGoPrev();
                 isDragging = true;
-                notesContainer.classList.add('dragging');
 
-                const h = notesViewport.offsetHeight;
-                const base = -currentNoteIndex * h;
-                let pull;
-
-                if (!allowed) {
-                    pull = -diff * 0.06;
-                } else {
-                    pull = -diff * 0.45;
-                }
+                var h = notesViewport.offsetHeight;
+                var base = -currentNoteIndex * h;
+                var pull = allowed ? -diff * 0.45 : -diff * 0.06;
 
                 dragOffset = diff;
-                notesContainer.style.transform = `translateY(${base + pull}px)`;
+                notesContainer.classList.remove('animating');
+                notesContainer.style.transform = 'translateY(' + (base + pull) + 'px)';
 
-                if (isDragging && dragStartedInTextarea) {
-                    const ta = getActiveTextarea();
-                    if (ta) ta.blur();
+                if (dragStartedInTextarea) {
+                    var activeTa = getActiveTextarea();
+                    if (activeTa) activeTa.blur();
                 }
             }
         }, { passive: true });
 
-        document.addEventListener('touchend', e => {
+        document.addEventListener('touchend', function () {
             if (!touchStartedInViewport) return;
             touchStartedInViewport = false;
-            finishDrag();
+            endDrag();
         }, { passive: true });
 
-        document.addEventListener('touchcancel', e => {
+        document.addEventListener('touchcancel', function () {
             if (!touchStartedInViewport) return;
             touchStartedInViewport = false;
-            finishDrag();
+            endDrag();
         }, { passive: true });
     }
 
-    function finishDrag() {
-        notesContainer.classList.remove('dragging');
-        if (!isDragging) { dragStartY = 0; return; }
+    function endDrag() {
+        if (!isDragging) {
+            dragStartY = 0;
+            return;
+        }
 
-        const diff = dragOffset;
-        const elapsed = Date.now() - dragStartTime;
-        const velocity = Math.abs(diff) / Math.max(elapsed, 1);
-        const threshold = velocity > 0.3 ? 25 : 70;
+        var diff = dragOffset;
+        var elapsed = Date.now() - dragStartTime;
+        var velocity = Math.abs(diff) / Math.max(elapsed, 1);
+        var threshold = velocity > 0.3 ? 25 : 70;
 
         if (Math.abs(diff) > threshold) {
             if (diff > 0 && canGoNext()) goNext();
             else if (diff < 0 && canGoPrev()) goPrev();
-            else setPosition(true);
+            else animateToPosition();
         } else {
-            setPosition(true);
+            animateToPosition();
         }
 
         isDragging = false;
@@ -498,51 +507,46 @@
         textareaAtBoundary = false;
     }
 
-    // ========== MOUSE SCROLL ==========
+    // ========== SCROLL ==========
     function setupScroll() {
-        notesViewport.addEventListener('wheel', e => {
+        notesViewport.addEventListener('wheel', function (e) {
             if (scrollCooldown) return;
 
-            const ta = getActiveTextarea();
+            var ta = getActiveTextarea();
             if (ta) {
-                const goingDown = e.deltaY > 0;
-                const atBound = goingDown ? isAtBottom(ta) : isAtTop(ta);
-                if (!atBound) return;
+                var down = e.deltaY > 0;
+                if (!(down ? isAtBottom(ta) : isAtTop(ta))) return;
             }
 
             if (Math.abs(e.deltaY) < 30) return;
-
-            const allowed = e.deltaY > 0 ? canGoNext() : canGoPrev();
-            if (!allowed) return;
+            if (!(e.deltaY > 0 ? canGoNext() : canGoPrev())) return;
 
             scrollCooldown = true;
-            setTimeout(() => { scrollCooldown = false; }, 500);
+            setTimeout(function () { scrollCooldown = false; }, 500);
 
             if (e.deltaY > 0) goNext();
             else goPrev();
         }, { passive: true });
     }
 
-    // ========== EMPTY STATE ==========
+    // ========== EMPTY INTERACTIONS ==========
     function setupEmptyInteractions() {
-        document.addEventListener('wheel', e => {
-            if (notes.length > 0) return;
-            if (scrollCooldown) return;
-            if (Math.abs(e.deltaY) < 30) return;
+        var emptyTouchStart = 0;
+
+        document.addEventListener('wheel', function (e) {
+            if (notes.length > 0 || scrollCooldown || Math.abs(e.deltaY) < 30) return;
             scrollCooldown = true;
-            setTimeout(() => { scrollCooldown = false; }, 500);
+            setTimeout(function () { scrollCooldown = false; }, 500);
             createFirstNote();
         }, { passive: true });
 
-        let emptyTouchStart = 0;
-
-        document.addEventListener('touchstart', e => {
+        document.addEventListener('touchstart', function (e) {
             if (notes.length === 0) emptyTouchStart = e.touches[0].clientY;
         }, { passive: true });
 
-        document.addEventListener('touchend', e => {
+        document.addEventListener('touchend', function (e) {
             if (notes.length === 0 && emptyTouchStart) {
-                const diff = emptyTouchStart - (e.changedTouches[0]?.clientY || 0);
+                var diff = emptyTouchStart - (e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
                 if (Math.abs(diff) > 50) createFirstNote();
                 emptyTouchStart = 0;
             }
@@ -551,10 +555,10 @@
 
     // ========== SIDEBAR SWIPE ==========
     function setupSidebarSwipe(el) {
-        let sx = 0, cx = 0, sy = 0, swiping = false;
+        var sx = 0, cx = 0, sy = 0, swiping = false;
 
-        el.addEventListener('touchstart', e => {
-            document.querySelectorAll('.sidebar-note-content.swiped').forEach(s => {
+        el.addEventListener('touchstart', function (e) {
+            document.querySelectorAll('.sidebar-note-content.swiped').forEach(function (s) {
                 if (s !== el) s.classList.remove('swiped');
             });
             sx = e.touches[0].clientX;
@@ -562,14 +566,14 @@
             swiping = false;
         }, { passive: true });
 
-        el.addEventListener('touchmove', e => {
+        el.addEventListener('touchmove', function (e) {
             cx = e.touches[0].clientX;
             if (Math.abs(sx - cx) > Math.abs(sy - e.touches[0].clientY) && Math.abs(sx - cx) > 10) {
                 swiping = true;
             }
         }, { passive: true });
 
-        el.addEventListener('touchend', () => {
+        el.addEventListener('touchend', function () {
             if (swiping) {
                 if (sx - cx > 50) el.classList.add('swiped');
                 else if (cx - sx > 25) el.classList.remove('swiped');
@@ -579,30 +583,41 @@
         }, { passive: true });
     }
 
+    // ========== RESIZE ==========
+    function handleResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+            setPositionImmediate();
+        }, 100);
+    }
+
     // ========== EVENTS ==========
     function initEvents() {
         hamburgerBtn.addEventListener('click', openSidebar);
         sidebarOverlay.addEventListener('click', closeSidebar);
-        searchInput.addEventListener('input', () => renderSidebar());
-        fontDecreaseBtn.addEventListener('click', () => changeFontSize(-2));
-        fontIncreaseBtn.addEventListener('click', () => changeFontSize(2));
+        searchInput.addEventListener('input', function () { renderSidebar(); });
+        fontDecreaseBtn.addEventListener('click', function () { changeFontSize(-2); });
+        fontIncreaseBtn.addEventListener('click', function () { changeFontSize(2); });
 
-        deleteBtn.addEventListener('click', () => {
+        deleteBtn.addEventListener('click', function () {
             if (!notes.length) return;
-            const n = notes[currentNoteIndex];
+            var n = notes[currentNoteIndex];
             if (n) showDeleteModal(n.id);
         });
 
         cancelDeleteBtn.addEventListener('click', hideDeleteModal);
-        confirmDeleteBtn.addEventListener('click', () => {
+        confirmDeleteBtn.addEventListener('click', function () {
             if (deleteTargetId) deleteNote(deleteTargetId);
             hideDeleteModal();
         });
-        deleteModal.addEventListener('click', e => {
+        deleteModal.addEventListener('click', function (e) {
             if (e.target === deleteModal) hideDeleteModal();
         });
 
-        window.addEventListener('resize', () => setPosition(false));
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', function () {
+            setTimeout(setPositionImmediate, 200);
+        });
 
         setupTouch();
         setupScroll();
@@ -616,6 +631,9 @@
         renderAll();
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-    else init();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();

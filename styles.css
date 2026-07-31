@@ -24,9 +24,10 @@
     --radius: 10px;
     --radius-sm: 6px;
     --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --sidebar-width: 300px;
+    --sidebar-width: 65%;
+    --sidebar-max: 300px;
     --topbar-height: 48px;
-    --bottombar-height: 44px;
+    --bottombar-height: 48px;
 }
 
 html, body {
@@ -37,6 +38,7 @@ html, body {
     color: var(--text-primary);
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar { display: none; }
@@ -62,8 +64,8 @@ html, body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 65%;
-    max-width: 300px;
+    width: var(--sidebar-width);
+    max-width: var(--sidebar-max);
     height: 100%;
     background: var(--surface);
     z-index: 999;
@@ -78,6 +80,7 @@ html, body {
 .sidebar-search {
     padding: 16px 14px 12px;
     position: relative;
+    flex-shrink: 0;
 }
 .sidebar-search .search-icon {
     position: absolute;
@@ -86,6 +89,7 @@ html, body {
     transform: translateY(-50%);
     color: var(--text-muted);
     font-size: 13px;
+    pointer-events: none;
 }
 .sidebar-search input {
     width: 100%;
@@ -196,6 +200,7 @@ html, body {
     padding: 12px 14px;
     border-top: 1px solid var(--border);
     text-align: center;
+    flex-shrink: 0;
 }
 .sidebar-note-count {
     font-size: 11px;
@@ -234,9 +239,7 @@ html, body {
     gap: 2px;
 }
 
-.top-spacer {
-    width: 38px;
-}
+.top-spacer { width: 42px; }
 
 .hamburger-btn {
     background: none;
@@ -300,10 +303,10 @@ html, body {
     flex-direction: column;
     height: 100%;
     will-change: transform;
+}
+.notes-container.animating {
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.notes-container.no-transition { transition: none; }
-.notes-container.dragging { transition: none; }
 
 .note-card {
     width: 100%;
@@ -326,7 +329,6 @@ html, body {
     outline: none;
     overflow-y: auto;
     caret-color: var(--red);
-    transition: font-size 0.2s ease;
 }
 .note-textarea::placeholder {
     color: var(--text-muted);
@@ -370,7 +372,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 6px;
+    padding: 0 4px;
     background: var(--black);
     z-index: 100;
 }
@@ -383,18 +385,19 @@ html, body {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 14px;
+    font-size: 18px;
     cursor: pointer;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border-radius: var(--radius-sm);
-    transition: all var(--transition);
+    transition: color var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 .icon-btn:hover { color: var(--text-primary); }
-.icon-btn:active { transform: scale(0.9); }
+.icon-btn:active { color: var(--text-primary); }
 .delete-btn:hover { color: var(--red); }
+.delete-btn:active { color: var(--red); }
 
 /* ========== MODAL ========== */
 .modal-overlay {
@@ -457,9 +460,9 @@ html, body {
 .confirm-delete-btn:hover { background: var(--red-dark); }
 
 /* ========== RESPONSIVE ========== */
-
 @media (min-width: 768px) {
     .note-textarea { padding: 16px 32px; }
+    :root { --sidebar-max: 320px; }
 }
 @media (min-width: 1024px) {
     .note-textarea { padding: 20px 48px; }
