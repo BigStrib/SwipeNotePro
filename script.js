@@ -32,6 +32,7 @@
     let dragStartedInTextarea = false;
     let textareaAtBoundary = false;
     let scrollCooldown = false;
+    let touchStartedInViewport = false;
 
     // ========== STORAGE ==========
     function save() {
@@ -396,10 +397,19 @@
         return ta.scrollTop <= 2;
     }
 
+    function isInsideViewport(el) {
+        while (el) {
+            if (el === notesViewport) return true;
+            el = el.parentElement;
+        }
+        return false;
+    }
+
     // ========== TOUCH DRAG ==========
     function setupTouch() {
         notesViewport.addEventListener('touchstart', e => {
             if (!notes.length) return;
+            touchStartedInViewport = true;
             dragStartY = e.touches[0].clientY;
             dragOffset = 0;
             dragStartTime = Date.now();
@@ -408,8 +418,9 @@
             textareaAtBoundary = false;
         }, { passive: true });
 
-        notesViewport.addEventListener('touchmove', e => {
-            if (dragStartY === 0) return;
+        document.addEventListener('touchmove', e => {
+            if (!touchStartedInViewport || dragStartY === 0) return;
+
             const cy = e.touches[0].clientY;
             const diff = dragStartY - cy;
 
@@ -451,8 +462,17 @@
             }
         }, { passive: true });
 
-        notesViewport.addEventListener('touchend', () => finishDrag(), { passive: true });
-        notesViewport.addEventListener('touchcancel', () => finishDrag(), { passive: true });
+        document.addEventListener('touchend', e => {
+            if (!touchStartedInViewport) return;
+            touchStartedInViewport = false;
+            finishDrag();
+        }, { passive: true });
+
+        document.addEventListener('touchcancel', e => {
+            if (!touchStartedInViewport) return;
+            touchStartedInViewport = false;
+            finishDrag();
+        }, { passive: true });
     }
 
     function finishDrag() {
