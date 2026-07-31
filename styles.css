@@ -192,24 +192,39 @@ html, body {
 }
 .sidebar-note-delete:hover { background: var(--red-dark); }
 
+.sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+}
+.sidebar-note-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 /* ========== MAIN ========== */
 .main-content {
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    position: relative;
     background: var(--black);
 }
 
 /* ========== TOP BAR ========== */
 .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     height: var(--topbar-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 8px;
-    background: transparent;
-    flex-shrink: 0;
-    z-index: 10;
+    background: var(--black);
+    z-index: 100;
 }
 
 .top-center {
@@ -272,9 +287,12 @@ html, body {
 
 /* ========== NOTES ========== */
 .notes-viewport {
-    flex: 1;
+    position: absolute;
+    top: var(--topbar-height);
+    left: 0;
+    right: 0;
+    bottom: var(--bottombar-height);
     overflow: hidden;
-    position: relative;
 }
 
 .notes-container {
@@ -344,14 +362,17 @@ html, body {
 
 /* ========== BOTTOM BAR ========== */
 .bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: var(--bottombar-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 6px;
-    background: transparent;
-    flex-shrink: 0;
-    z-index: 10;
+    background: var(--black);
+    z-index: 100;
 }
 .bottom-left, .bottom-right {
     display: flex;
@@ -435,26 +456,6 @@ html, body {
 .confirm-delete-btn { background: var(--red); color: white; }
 .confirm-delete-btn:hover { background: var(--red-dark); }
 
-
-.sidebar-footer {
-    padding: 12px 14px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-}
-
-.sidebar-note-count {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-
-
-
-
-
 /* ========== RESPONSIVE ========== */
 @media (max-width: 380px) {
     .sidebar { width: 100vw; max-width: 100vw; }
@@ -470,6 +471,10 @@ html, body {
     .top-bar {
         padding-top: env(safe-area-inset-top);
         height: calc(var(--topbar-height) + env(safe-area-inset-top));
+    }
+    .notes-viewport {
+        top: calc(var(--topbar-height) + env(safe-area-inset-top));
+        bottom: calc(var(--bottombar-height) + env(safe-area-inset-bottom));
     }
     .bottom-bar {
         padding-bottom: env(safe-area-inset-bottom);
