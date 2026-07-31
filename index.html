@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Notes</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+	
+	<meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+	
+	
+	<link rel="icon" type="images/png" href="images/favi.png">
+	
+	
+	
+	
+	
+	
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-search">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search notes...">
+        </div>
+        <div class="sidebar-notes-list" id="sidebarNotesList"></div>
+        <div class="sidebar-footer">
+            <span class="sidebar-note-count" id="sidebarNoteCount">0 Notes</span>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <div class="top-bar">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="top-center">
+                <div class="note-counter" id="noteCounter">0 Notes</div>
+                <div class="dot-navigation" id="dotNavigation"></div>
+            </div>
+            <div class="top-spacer"></div>
+        </div>
+
+        <div class="notes-viewport" id="notesViewport">
+            <div class="notes-container" id="notesContainer"></div>
+        </div>
+
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-sticky-note"></i>
+            <p>No notes yet</p>
+            <span>Scroll down to create your first note</span>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="bottom-left">
+                <button class="icon-btn" id="fontDecreaseBtn" title="Decrease font size">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="icon-btn" id="fontIncreaseBtn" title="Increase font size">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="bottom-right">
+                <button class="icon-btn delete-btn" id="deleteBtn" title="Delete note">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Delete Note?</h3>
+            <p id="deleteModalText">This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel-btn" id="cancelDeleteBtn">Cancel</button>
+                <button class="modal-btn confirm-delete-btn" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
