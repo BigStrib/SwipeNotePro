@@ -3,6 +3,7 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 :root {
@@ -32,7 +33,9 @@
 
 html, body {
     height: 100%;
+    width: 100%;
     overflow: hidden;
+    position: fixed;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background: var(--black);
     color: var(--text-primary);
@@ -47,6 +50,22 @@ html, body {
     -ms-overflow-style: none;
 }
 
+/* ========== NO SELECT GLOBAL (except textareas) ========== */
+body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.note-textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+
 /* ========== OVERLAY ========== */
 .sidebar-overlay {
     position: fixed;
@@ -57,7 +76,10 @@ html, body {
     visibility: hidden;
     transition: opacity var(--transition), visibility var(--transition);
 }
-.sidebar-overlay.active { opacity: 1; visibility: visible; }
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
 
 /* ========== SIDEBAR ========== */
 .sidebar {
@@ -75,7 +97,9 @@ html, body {
     flex-direction: column;
     border-right: 1px solid var(--border);
 }
-.sidebar.open { transform: translateX(0); }
+.sidebar.open {
+    transform: translateX(0);
+}
 
 .sidebar-search {
     padding: 16px 14px 12px;
@@ -101,9 +125,15 @@ html, body {
     font-size: 14px;
     outline: none;
     transition: border-color var(--transition);
+    -webkit-user-select: text;
+    user-select: text;
 }
-.sidebar-search input::placeholder { color: var(--text-muted); }
-.sidebar-search input:focus { border-color: var(--red); }
+.sidebar-search input::placeholder {
+    color: var(--text-muted);
+}
+.sidebar-search input:focus {
+    border-color: var(--red);
+}
 
 .sidebar-notes-list {
     flex: 1;
@@ -126,14 +156,17 @@ html, body {
     position: relative;
     z-index: 2;
     background: var(--surface);
-    user-select: none;
 }
-.sidebar-note-content:hover { background: var(--surface-light); }
+.sidebar-note-content:hover {
+    background: var(--surface-light);
+}
 .sidebar-note-content.active {
     background: var(--surface-light);
     border-left-color: var(--red);
 }
-.sidebar-note-content.swiped { transform: translateX(-72px); }
+.sidebar-note-content.swiped {
+    transform: translateX(-72px);
+}
 
 .sidebar-note-icon {
     width: 32px;
@@ -153,7 +186,10 @@ html, body {
     color: white;
 }
 
-.sidebar-note-info { flex: 1; min-width: 0; }
+.sidebar-note-info {
+    flex: 1;
+    min-width: 0;
+}
 .sidebar-note-title {
     font-size: 13px;
     font-weight: 600;
@@ -194,7 +230,9 @@ html, body {
     cursor: pointer;
     transition: background var(--transition);
 }
-.sidebar-note-delete:hover { background: var(--red-dark); }
+.sidebar-note-delete:hover {
+    background: var(--red-dark);
+}
 
 .sidebar-footer {
     padding: 12px 14px;
@@ -212,24 +250,24 @@ html, body {
 
 /* ========== MAIN ========== */
 .main-content {
-    height: 100%;
-    position: relative;
+    position: fixed;
+    inset: 0;
     background: var(--black);
+    display: flex;
+    flex-direction: column;
 }
 
 /* ========== TOP BAR ========== */
 .top-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
     height: var(--topbar-height);
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 8px;
     background: var(--black);
     z-index: 100;
+    position: relative;
 }
 
 .top-center {
@@ -239,7 +277,9 @@ html, body {
     gap: 2px;
 }
 
-.top-spacer { width: 42px; }
+.top-spacer {
+    width: 42px;
+}
 
 .hamburger-btn {
     background: none;
@@ -249,9 +289,8 @@ html, body {
     cursor: pointer;
     padding: 10px;
     border-radius: var(--radius-sm);
-    transition: color var(--transition);
+    outline: none;
 }
-.hamburger-btn:hover { color: var(--text-primary); }
 
 .note-counter {
     font-size: 11px;
@@ -286,22 +325,22 @@ html, body {
     height: 8px;
     box-shadow: 0 0 6px var(--red-glow);
 }
-.dot-navigation .dot:hover:not(.active) { background: var(--text-muted); }
 
 /* ========== NOTES ========== */
 .notes-viewport {
-    position: absolute;
-    top: var(--topbar-height);
-    left: 0;
-    right: 0;
-    bottom: var(--bottombar-height);
+    flex: 1;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 .notes-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
-    height: 100%;
     will-change: transform;
 }
 .notes-container.animating {
@@ -310,9 +349,8 @@ html, body {
 
 .note-card {
     width: 100%;
-    height: 100%;
-    flex-shrink: 0;
     display: flex;
+    overflow: hidden;
 }
 
 .note-textarea {
@@ -347,7 +385,9 @@ html, body {
     z-index: 5;
     pointer-events: none;
 }
-.empty-state.visible { display: block; }
+.empty-state.visible {
+    display: block;
+}
 .empty-state i {
     font-size: 48px;
     margin-bottom: 14px;
@@ -360,23 +400,24 @@ html, body {
     margin-bottom: 6px;
     color: var(--text-secondary);
 }
-.empty-state span { font-size: 13px; }
+.empty-state span {
+    font-size: 13px;
+}
 
 /* ========== BOTTOM BAR ========== */
 .bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
     height: var(--bottombar-height);
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 4px;
     background: var(--black);
     z-index: 100;
+    position: relative;
 }
-.bottom-left, .bottom-right {
+.bottom-left,
+.bottom-right {
     display: flex;
     align-items: center;
 }
@@ -389,23 +430,23 @@ html, body {
     cursor: pointer;
     padding: 12px 14px;
     border-radius: var(--radius-sm);
-    transition: color var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
+    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-    outline: none;
     -webkit-tap-highlight-color: transparent;
 }
-.icon-btn:hover { color: var(--text-primary); }
-.icon-btn:focus { outline: none; }
-.icon-btn:active { color: var(--text-primary); outline: none; }
-.delete-btn:hover { color: var(--red); }
-.delete-btn:active { color: var(--red); }
+.icon-btn:focus {
+    outline: none;
+}
+.delete-btn:active {
+    color: var(--red);
+}
 
 /* ========== MODAL ========== */
 .modal-overlay {
@@ -421,7 +462,10 @@ html, body {
     transition: opacity var(--transition), visibility var(--transition);
     padding: 20px;
 }
-.modal-overlay.active { opacity: 1; visibility: visible; }
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
 
 .modal {
     background: var(--surface);
@@ -434,7 +478,9 @@ html, body {
     transform: scale(0.9);
     transition: transform var(--transition);
 }
-.modal-overlay.active .modal { transform: scale(1); }
+.modal-overlay.active .modal {
+    transform: scale(1);
+}
 
 .modal-icon {
     width: 48px;
@@ -448,9 +494,21 @@ html, body {
     font-size: 20px;
     color: var(--red);
 }
-.modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-.modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
-.modal-buttons { display: flex; gap: 10px; }
+.modal h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.modal p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+}
 .modal-btn {
     flex: 1;
     padding: 10px;
@@ -459,13 +517,17 @@ html, body {
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
-.modal-btn:active { transform: scale(0.97); }
-.cancel-btn { background: var(--surface-lighter); color: var(--text-primary); }
-.cancel-btn:hover { background: var(--border-light); }
-.confirm-delete-btn { background: var(--red); color: white; }
-.confirm-delete-btn:hover { background: var(--red-dark); }
+.cancel-btn {
+    background: var(--surface-lighter);
+    color: var(--text-primary);
+}
+.confirm-delete-btn {
+    background: var(--red);
+    color: white;
+}
 
 /* ========== RESPONSIVE ========== */
 @media (min-width: 768px) {
@@ -480,10 +542,6 @@ html, body {
     .top-bar {
         padding-top: env(safe-area-inset-top);
         height: calc(var(--topbar-height) + env(safe-area-inset-top));
-    }
-    .notes-viewport {
-        top: calc(var(--topbar-height) + env(safe-area-inset-top));
-        bottom: calc(var(--bottombar-height) + env(safe-area-inset-bottom));
     }
     .bottom-bar {
         padding-bottom: env(safe-area-inset-bottom);
