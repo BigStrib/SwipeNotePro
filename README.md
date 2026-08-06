@@ -1,0 +1,1 @@
+This is a web application it is also an upgraded version of SwipeNote. This one is exactly like the other where you swipe up and down to add notes and it also has an upgraded section where it shows all the notes.
